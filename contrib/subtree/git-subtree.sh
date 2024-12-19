@@ -670,6 +670,7 @@ copy_or_skip () {
 			nonidentical="$parent"
 		fi
 
+######## gotparents中是否已经包含$parent，如果是则跳过，否则拼接参数-p $parent
 		# sometimes both old parents map to the same newparent;
 		# eliminate duplicates
 		is_new=1
@@ -686,6 +687,7 @@ copy_or_skip () {
 			gotparents="$gotparents $parent"
 			p="$p -p $parent"
 		fi
+########
 	done
 
 	if test -n "$identical" && test -n "$nonidentical"
@@ -759,10 +761,12 @@ process_split_commit () {
 
 	tree=$(subtree_for_commit "$rev" "$dir") || exit $?
 	debug "tree is: $tree"
+	local split_dir=$(git cat-file -p $rev | grep "^git-subtree-dir:" | awk '{print $2}')
+	debug "split dir is: $split_dir"
 
 	# ugly.  is there no better way to tell if this is a subtree
 	# vs. a mainline commit?  Does it matter?
-	if test -z "$tree"
+	if test -z "$tree" -o -n "$split_dir"
 	then
 		set_notree "$rev"
 		if test -n "$newparents"
@@ -893,6 +897,7 @@ cmd_split () {
 	fi
 
 	unrevs="$(find_existing_splits "$dir" "$rev")" || exit $?
+	debug "unrevs: $unrevs"
 
 	# We can't restrict rev-list to only $dir here, because some of our
 	# parents have the $dir contents the root, and those won't match.
